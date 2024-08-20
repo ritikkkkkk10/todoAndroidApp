@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
@@ -40,6 +41,7 @@ public class RegisterActivity extends AppCompatActivity {
     ProgressBar progressBar;
 
     private String name, email, password;
+    SharedPreferenceClass sharedPreferenceClass;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,6 +55,8 @@ public class RegisterActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progress_bar);
 
         registerBtn = findViewById(R.id.registerBtn);
+
+        sharedPreferenceClass = new SharedPreferenceClass(this);
 
         loginBtn.setOnClickListener(v -> {
             Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
@@ -78,7 +82,7 @@ public class RegisterActivity extends AppCompatActivity {
         params.put("email", email);
         params.put("password", password);
 
-        String apiKey = "http://192.168.98.168/api/todo/auth/register"; // Replace with your actual server URL
+        String apiKey = "http://192.168.27.168:3000/api/todo/auth/register"; // Replace with your actual server URL
 
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(
                 Request.Method.POST,
@@ -88,6 +92,7 @@ public class RegisterActivity extends AppCompatActivity {
                     try {
                         if (response.getBoolean("success")) {
                             String token = response.getString("token");
+                            sharedPreferenceClass.setValue_string("token", token);
                             Toast.makeText(RegisterActivity.this, "Registration Successful!", Toast.LENGTH_SHORT).show();
                             startActivity(new Intent(RegisterActivity.this, MainActivity.class));
                         }
@@ -106,8 +111,16 @@ public class RegisterActivity extends AppCompatActivity {
                     je.printStackTrace();
                 }
             } else {
-                Toast.makeText(RegisterActivity.this, "An error occurred. Please try again.", Toast.LENGTH_SHORT).show();
+                // Log the error details
+                String errorMessage = error.getMessage();
+                if (errorMessage != null) {
+                    Toast.makeText(RegisterActivity.this, "Error: " + errorMessage, Toast.LENGTH_SHORT).show();
+                    error.printStackTrace(); // Log the full error
+                } else {
+                    Toast.makeText(RegisterActivity.this, "An error occurred. Please try again.", Toast.LENGTH_SHORT).show();
+                }
             }
+
             progressBar.setVisibility(View.GONE);
         }) {
             @Override
@@ -153,6 +166,16 @@ public class RegisterActivity extends AppCompatActivity {
         InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
         if (imm != null) {
             imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        SharedPreferences todo_pref = getSharedPreferences("user_todo", MODE_PRIVATE);
+        if(todo_pref.contains("token")) {
+            startActivity(new Intent(RegisterActivity.this, MainActivity.class));
+            finish();
         }
     }
 }
